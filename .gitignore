@@ -19,3 +19,5 @@ _build/
 
 # python temp directory
 __pycache__/
+
+*.v#

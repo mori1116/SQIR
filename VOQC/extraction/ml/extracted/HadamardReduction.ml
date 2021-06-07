@@ -189,6 +189,38 @@ let apply_H_equivalence7 q l =
     ((RzQGateSet.coq_H q) :: ((RzQGateSet.coq_Z q) :: ((RzQGateSet.coq_H q) :: [])))
     ((RzQGateSet.coq_X q) :: [])
 
+(** val apply_H_equivalence8 :
+    int -> RzQGateSet.coq_RzQ_ucom_l -> RzQGateSet.RzQGateSet.coq_RzQ_Unitary
+    gate_app list option **)
+
+let apply_H_equivalence8 q l =
+  match RzQGateSet.remove_prefix l ((RzQGateSet.coq_H q) :: []) with
+  | Some l1 ->
+    (match next_two_qubit_gate l1 q with
+     | Some p ->
+       let (p0, l3) = p in
+       let (p1, q2) = p0 in
+       let (p2, q1) = p1 in
+       let (l2, r) = p2 in
+       (match r with
+        | RzQGateSet.RzQGateSet.URzQ_CNOT ->
+          if (=) q q2
+          then (match RzQGateSet.remove_prefix l3 ((RzQGateSet.coq_H q) :: []) with
+                | Some l4 ->
+                  Some
+                    (List.append l2
+                      (List.append
+                        ((RzQGateSet.coq_P q1) :: ((RzQGateSet.coq_P q2) :: (
+                        (RzQGateSet.coq_CNOT q1 q2) :: ((RzQGateSet.coq_PDAG
+                                                          q2) :: ((RzQGateSet.coq_CNOT
+                                                                    q1 q2) :: [])))))
+                        l4))
+                | None -> None)
+          else None
+        | _ -> None)
+     | None -> None)
+  | None -> None
+
 (** val apply_H_equivalence :
     RzQGateSet.coq_RzQ_ucom_l -> int -> RzQGateSet.coq_RzQ_ucom_l option **)
 
@@ -198,7 +230,7 @@ let apply_H_equivalence l q =
                                                                  q) :: (
     (apply_H_equivalence4 q) :: ((apply_H_equivalence5 q) :: ((apply_H_equivalence6
                                                                 q) :: (
-    (apply_H_equivalence7 q) :: [])))))))
+    (apply_H_equivalence7 q) :: ((apply_H_equivalence8 q) :: []))))))))
 
 (** val apply_H_equivalences' :
     RzQGateSet.coq_RzQ_ucom_l -> int -> RzQGateSet.RzQGateSet.coq_RzQ_Unitary

@@ -118,8 +118,25 @@ Definition apply_H_equivalence6 {dim} q (l : RzQ_ucom_l dim) :=
 Definition apply_H_equivalence7 {dim} q (l : RzQ_ucom_l dim) := 
   replace_pattern l (H q  :: Z q :: H q :: []) (X q :: []).
 
+Definition apply_H_equivalence8 {dim} q (l : RzQ_ucom_l dim) :=
+  match (remove_prefix l (H q :: [])) with
+  | Some l1 =>
+      match (next_two_qubit_gate l1 q) with
+      | Some (l2, URzQ_CNOT, q1, q2, l3) =>
+          if q =? q2 
+          then match (remove_prefix l3 (H q :: [])) with
+               | Some l4 =>
+                   Some (l2 ++ (P q1 :: P q2 :: CNOT q1 q2 :: PDAG q2 :: CNOT q1 q2 :: []) ++ l4)
+               | _ => None
+               end
+          else None
+      | _ => None
+      end
+  | _ => None
+  end.
+
 Definition apply_H_equivalence {dim} (l : RzQ_ucom_l dim) (q : nat) : option (RzQ_ucom_l dim) :=
-  try_rewrites l (apply_H_equivalence1 q :: apply_H_equivalence2 q :: apply_H_equivalence3 q :: apply_H_equivalence4 q :: apply_H_equivalence5 q :: apply_H_equivalence6 q :: apply_H_equivalence7 q :: []).
+  try_rewrites l (apply_H_equivalence1 q :: apply_H_equivalence2 q :: apply_H_equivalence3 q :: apply_H_equivalence4 q :: apply_H_equivalence5 q :: apply_H_equivalence6 q :: apply_H_equivalence7 q :: apply_H_equivalence8 q :: []).
 
 (* For each H gate, try to apply a rewrite rule. If some rewrite rule
    succeeds, then make the recursive call on the circuit returned by
@@ -399,6 +416,62 @@ Proof.
   solve_matrix; autorewrite with Cexp_db trig_db C_db; try (C_field_simplify; try nonzero; try lca).
 Qed.
 
+Lemma apply_H_equivalence8_sound : forall {dim} (l l' : RzQ_ucom_l dim) q,
+  apply_H_equivalence8 q l = Some l' ->
+  l =l= l'.
+Proof.
+  intros. 
+  unfold apply_H_equivalence8 in H.
+  destruct (remove_prefix l (RzQGateSet.H q :: [])) eqn:rp; try discriminate.
+  apply remove_prefix_correct in rp.
+  rewrite rp; clear rp.
+  destruct_list_ops.
+  destruct (remove_prefix g0 (RzQGateSet.H n :: [])) eqn:rp; try discriminate.
+  apply remove_prefix_correct in rp.
+  rewrite rp; clear rp.
+  inversion H; subst; clear H.
+  rewrite (cons_to_app (RzQGateSet.H n)).
+  rewrite (cons_to_app (P n)).
+  rewrite (cons_to_app (P n0)).
+  rewrite 2 (cons_to_app _ (_ :: _)).
+  rewrite (cons_to_app _ g).
+  repeat rewrite app_assoc.
+  rewrite <- (app_assoc [H n]).
+  setoid_rewrite (does_not_reference_commutes_app1 g1); try assumption.
+  clear.
+  apply_app_congruence. rewrite app_nil_r.
+  unfold uc_equiv_l; simpl.
+  rewrite 2 SKIP_id_r.
+  unfold uc_equiv; simpl.
+  rewrite hadamard_rotation.
+  repeat rewrite phase_shift_rotation.
+  unfold Qreals.Q2R; simpl.
+  rewrite P_simplifies, PDAG_simplifies.
+  autorewrite with eval_db.
+  gridify.
+  - do 1 (apply f_equal2; trivial).
+    + autorewrite with ket_db Cexp_db C_db. rewrite <- Mscale_kron_dist_r.
+      rewrite kron_assoc; auto with wf_db. symmetry.
+      rewrite kron_assoc; auto with wf_db. symmetry.
+      do 1 (apply f_equal2; trivial).
+      rewrite Mscale_kron_dist_r. rewrite <- Mscale_kron_dist_l.
+      do 1 (apply f_equal2; trivial).
+      solve_matrix; try rewrite Cexp_neg; try rewrite Cexp_PI2; C_field.
+    + autorewrite with ket_db Cexp_db C_db.
+      do 2 (apply f_equal2; trivial).
+      solve_matrix; try rewrite Cexp_neg; try rewrite Cexp_PI2; C_field.
+  - do 1 (apply f_equal2; trivial).
+    + autorewrite with ket_db Cexp_db C_db.
+      rewrite <- Mscale_kron_dist_l. do 1 (apply f_equal2; trivial).
+      rewrite <- Mscale_kron_dist_l. do 1 (apply f_equal2; trivial).
+      rewrite <- Mscale_kron_dist_l. do 1 (apply f_equal2; trivial).
+      rewrite <- Mscale_kron_dist_r. do 1 (apply f_equal2; trivial).
+      solve_matrix; try rewrite Cexp_neg; try rewrite Cexp_PI2; C_field.
+    + autorewrite with ket_db Cexp_db C_db.
+      do 4 (apply f_equal2; trivial).
+      solve_matrix; try rewrite Cexp_neg; try rewrite Cexp_PI2; C_field.
+Qed.
+
 Lemma apply_H_equivalence_sound : forall {dim} (l l' : RzQ_ucom_l dim) q,
   apply_H_equivalence l q = Some l' -> 
   l ≅l≅ l'.
@@ -418,6 +491,8 @@ Proof.
   subst; apply (apply_H_equivalence5_sound _ _ _ H0). 
   subst; apply (apply_H_equivalence6_sound _ _ _ H0). 
   subst; apply (apply_H_equivalence7_sound _ _ _ H0). 
+  apply uc_equiv_cong_l.
+  subst; apply (apply_H_equivalence8_sound _ _ _ H0). 
 Qed.
 
 Lemma apply_H_equivalences_sound: forall {dim} (l : RzQ_ucom_l dim) n acc, 

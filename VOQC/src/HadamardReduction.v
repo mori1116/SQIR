@@ -22,7 +22,10 @@ Local Close Scope Q_scope.
    #2  - H q; P† q; H q ≡ P q; H q; P q 
    #3  - H q1; H q2; CNOT q1 q2; H q1; H q2 ≡ CNOT q2 q1 
    #4  - H q2; P q2; CNOT q1 q2; P† q2; H q2 ≡ P† q2; CNOT q1 q2; P q2 
-   #5  - H q2; P† q2; CNOT q1 q2; P q2; H q2 ≡ P q2; CNOT q1 q2; P† q2 
+   #5  - H q2; P† q2; CNOT q1 q2; P q2; H q2 ≡ P q2; CNOT q1 q2; P† q2
+
+   #6  - H q; X q; H q = Z q
+   #7  - H q; Z q; H q = X q 
 *)
 
 Definition apply_H_equivalence1 {dim} q (l : RzQ_ucom_l dim) := 
@@ -109,8 +112,14 @@ Definition apply_H_equivalence5 {dim} q (l : RzQ_ucom_l dim) :=
   | _ => None
   end.
 
+Definition apply_H_equivalence6 {dim} q (l : RzQ_ucom_l dim) := 
+  replace_pattern l (H q  :: X q :: H q :: []) (Z q :: []).
+
+Definition apply_H_equivalence7 {dim} q (l : RzQ_ucom_l dim) := 
+  replace_pattern l (H q  :: Z q :: H q :: []) (X q :: []).
+
 Definition apply_H_equivalence {dim} (l : RzQ_ucom_l dim) (q : nat) : option (RzQ_ucom_l dim) :=
-  try_rewrites l (apply_H_equivalence1 q :: apply_H_equivalence2 q :: apply_H_equivalence3 q :: apply_H_equivalence4 q :: apply_H_equivalence5 q :: []).
+  try_rewrites l (apply_H_equivalence1 q :: apply_H_equivalence2 q :: apply_H_equivalence3 q :: apply_H_equivalence4 q :: apply_H_equivalence5 q :: apply_H_equivalence6 q :: apply_H_equivalence7 q :: []).
 
 (* For each H gate, try to apply a rewrite rule. If some rewrite rule
    succeeds, then make the recursive call on the circuit returned by
@@ -345,6 +354,51 @@ Proof.
       rewrite Cexp_neg; rewrite Cexp_PI2; repeat group_radicals; lca.
 Qed.    
 
+Lemma Z_simplifies : phase_shift (1 * / 1 * PI) = phase_shift (PI).
+Proof. apply f_equal. lra. Qed.
+
+Lemma apply_H_equivalence6_sound : forall {dim} (l l' : RzQ_ucom_l dim) q,
+  apply_H_equivalence6 q l = Some l' ->
+  l ≅l≅ l'.
+Proof.
+  intros.
+  apply replace_pattern_sound in H; try assumption.
+  exists (0)%R.
+  destruct dim.
+  simpl; unfold pad. gridify.
+  simpl; autorewrite with eval_db; try lia.
+  gridify.
+  rewrite <- Mscale_kron_dist_l.
+  rewrite <- Mscale_kron_dist_r.
+  do 2 (apply f_equal2; trivial).
+  rewrite hadamard_rotation.
+  repeat rewrite phase_shift_rotation.
+  unfold Qreals.Q2R; simpl.
+  rewrite Z_simplifies.
+  solve_matrix; autorewrite with Cexp_db trig_db C_db; try (C_field_simplify; try nonzero; try lca).
+Qed.
+
+Lemma apply_H_equivalence7_sound : forall {dim} (l l' : RzQ_ucom_l dim) q,
+  apply_H_equivalence7 q l = Some l' ->
+  l ≅l≅ l'. 
+Proof.
+  intros.
+  apply replace_pattern_sound in H; try assumption.
+  exists (0)%R.
+  destruct dim.
+  simpl; unfold pad. gridify.
+  simpl; autorewrite with eval_db; try lia. 
+  gridify.  
+  rewrite <- Mscale_kron_dist_l.
+  rewrite <- Mscale_kron_dist_r.
+  do 2 (apply f_equal2; trivial).
+  rewrite hadamard_rotation.
+  repeat rewrite phase_shift_rotation.
+  unfold Qreals.Q2R; simpl.
+  rewrite Z_simplifies.
+  solve_matrix; autorewrite with Cexp_db trig_db C_db; try (C_field_simplify; try nonzero; try lca).
+Qed.
+
 Lemma apply_H_equivalence_sound : forall {dim} (l l' : RzQ_ucom_l dim) q,
   apply_H_equivalence l q = Some l' -> 
   l ≅l≅ l'.
@@ -362,6 +416,8 @@ Proof.
   subst; apply (apply_H_equivalence4_sound _ _ _ H0). 
   apply uc_equiv_cong_l.
   subst; apply (apply_H_equivalence5_sound _ _ _ H0). 
+  subst; apply (apply_H_equivalence6_sound _ _ _ H0). 
+  subst; apply (apply_H_equivalence7_sound _ _ _ H0). 
 Qed.
 
 Lemma apply_H_equivalences_sound: forall {dim} (l : RzQ_ucom_l dim) n acc, 

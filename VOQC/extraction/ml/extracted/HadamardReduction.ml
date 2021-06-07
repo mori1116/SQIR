@@ -171,6 +171,24 @@ let apply_H_equivalence5 q l =
      | None -> None)
   | None -> None
 
+(** val apply_H_equivalence6 :
+    int -> RzQGateSet.coq_RzQ_ucom_l -> RzQGateSet.RzQGateSet.coq_RzQ_Unitary
+    gate_list option **)
+
+let apply_H_equivalence6 q l =
+  RzQGateSet.replace_pattern l
+    ((RzQGateSet.coq_H q) :: ((RzQGateSet.coq_X q) :: ((RzQGateSet.coq_H q) :: [])))
+    ((RzQGateSet.coq_Z q) :: [])
+
+(** val apply_H_equivalence7 :
+    int -> RzQGateSet.coq_RzQ_ucom_l -> RzQGateSet.RzQGateSet.coq_RzQ_Unitary
+    gate_list option **)
+
+let apply_H_equivalence7 q l =
+  RzQGateSet.replace_pattern l
+    ((RzQGateSet.coq_H q) :: ((RzQGateSet.coq_Z q) :: ((RzQGateSet.coq_H q) :: [])))
+    ((RzQGateSet.coq_X q) :: [])
+
 (** val apply_H_equivalence :
     RzQGateSet.coq_RzQ_ucom_l -> int -> RzQGateSet.coq_RzQ_ucom_l option **)
 
@@ -178,7 +196,9 @@ let apply_H_equivalence l q =
   try_rewrites l
     ((apply_H_equivalence1 q) :: ((apply_H_equivalence2 q) :: ((apply_H_equivalence3
                                                                  q) :: (
-    (apply_H_equivalence4 q) :: ((apply_H_equivalence5 q) :: [])))))
+    (apply_H_equivalence4 q) :: ((apply_H_equivalence5 q) :: ((apply_H_equivalence6
+                                                                q) :: (
+    (apply_H_equivalence7 q) :: [])))))))
 
 (** val apply_H_equivalences' :
     RzQGateSet.coq_RzQ_ucom_l -> int -> RzQGateSet.RzQGateSet.coq_RzQ_Unitary

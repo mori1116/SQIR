@@ -106,6 +106,8 @@ Extraction Implicit apply_H_equivalence2 [dim].
 Extraction Implicit apply_H_equivalence3 [dim].
 Extraction Implicit apply_H_equivalence4 [dim].
 Extraction Implicit apply_H_equivalence5 [dim].
+Extraction Implicit apply_H_equivalence6 [dim].
+Extraction Implicit apply_H_equivalence7 [dim].
 Extraction Implicit apply_H_equivalence [dim].
 Extraction Implicit apply_H_equivalences' [dim].
 Extraction Implicit hadamard_reduction [dim].
